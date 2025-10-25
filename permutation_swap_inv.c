@@ -53,24 +53,25 @@ uint64_t Inverse_Permutation (uint64_t cipherTxt ) {
 
 }
 
-int main(void) {
-    uint64_t plaintext = 0x0123456789ABCDEF;
+// To test the functions
+// int main(void) {
+//     uint64_t plaintext = 0x0123456789ABCDEF;
 
-    printf("Original Plaintext : %016llX\n", plaintext);
+//     printf("Original Plaintext : %016llX\n", plaintext);
 
-    uint64_t afterIP = Init_Permutation(plaintext);
-    printf("After Initial Perm : %016llX\n", afterIP);
+//     uint64_t afterIP = Init_Permutation(plaintext);
+//     printf("After Initial Perm : %016llX\n", afterIP);
 
-    uint32_t left  = (afterIP >> 32) & 0xFFFFFFFF;
-    uint32_t right = afterIP & 0xFFFFFFFF;
-    printf("Left  Half (L16)  : %08X\n", left);
-    printf("Right Half (R16)  : %08X\n", right);
+//     uint32_t left  = (afterIP >> 32) & 0xFFFFFFFF;
+//     uint32_t right = afterIP & 0xFFFFFFFF;
+//     printf("Left  Half (L16)  : %08X\n", left);
+//     printf("Right Half (R16)  : %08X\n", right);
 
-    uint64_t afterSwap = Swap_Permutation(left, right);
-    printf("After Swap         : %016llX\n", afterSwap);
+//     uint64_t afterSwap = Swap_Permutation(left, right);
+//     printf("After Swap         : %016llX\n", afterSwap);
 
-    uint64_t recovered = Inverse_Permutation(afterIP);
-    printf("Recovered Plaintext: %016llX\n", recovered);
+//     uint64_t recovered = Inverse_Permutation(afterIP);
+//     printf("Recovered Plaintext: %016llX\n", recovered);
 
-    return 0;
-}
+//     return 0;
+// }
