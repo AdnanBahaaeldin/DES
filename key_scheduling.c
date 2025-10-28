@@ -28,31 +28,29 @@ unsigned long long PC1(const unsigned long long * key64) {
     return result;
 }
 
-void left_circular_shift(unsigned long long * key56,const char * round_num) {
-    unsigned long long left,right;
-    if ( *round_num==1 || *round_num==2 || *round_num==9 || *round_num==16 ) {
-        left= ( ( (*key56>>28) << 1) | ( (*key56 >> 55) & 1ULL ) ) & 0xFFFFFFFULL;
-        right= (((*key56 & 0xFFFFFFFULL) << 1) | ((*key56 >> 27) & 1ULL )) & 0xFFFFFFFULL;
-    }else {
-        left= ( ( (*key56>>28) << 2) | ( (*key56 >> 54) & 3ULL ) ) & 0xFFFFFFFULL;
-        right= (((*key56 & 0xFFFFFFFULL) << 2) | ((*key56 >> 26) & 3ULL )) & 0xFFFFFFFULL;
-    }
-    *key56 = 0ULL | (left << 28) | right;
+void left_circular_shift(unsigned long long *key56, const int round_num) {
+    unsigned long long left = (*key56 >> 28) & 0xFFFFFFF;
+    unsigned long long right = *key56 & 0xFFFFFFF;
+    int shift = ( round_num == 1 || round_num == 2 || round_num == 9 || round_num == 16) ? 1 : 2;
+    left = ((left << shift) | (left >> (28 - shift))) & 0xFFFFFFF;
+    right = ((right << shift) | (right >> (28 - shift))) & 0xFFFFFFF;
+    *key56 = (left << 28) | right;
+
 }
 
-void PC2(const unsigned long long * key56,const char * round_num) {
+void PC2(const unsigned long long * key56,const int round_num) {
     unsigned long long result=0;
     for (int i = 0; i < 48; i++) {
         result = (result << 1) | ( ( *key56 >> (56-PC2_Table[i]) ) & 1ULL );
     }
-    round_keys[(*round_num)-1] = result;
+    round_keys[(round_num)-1] = result;
 }
 
 void generate_round_keys(const unsigned long long * key64) {
     unsigned long long key56 = PC1(key64);
-    for (char i = 1; i <= 16; i++) {
-        left_circular_shift(&key56, &i);
-        PC2(&key56, &i);
+    for (int i = 1; i <= 16; i++) {
+        left_circular_shift(&key56, i);
+        PC2(&key56, i);
     }
 }
 
