@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <time.h>
 
 
 /**
@@ -441,13 +442,13 @@ int openFiles(const char* KEY_F, FILE** KEY_FILE, const char* INPUT, FILE** INPU
 
 	*INPUT_FILE = fopen(INPUT, "rb");
 	if (*INPUT_FILE == NULL) {
-		printf("Error opening plaintext file\n");
+		printf("Error opening input file\n");
 		return 0;
 	}
 
 	*OUTPUT_FILE = fopen(OUTPUT, "wb");
 	if (*OUTPUT_FILE == NULL) {
-		printf("Error opening ciphertext file\n");
+		printf("Error opening output file\n");
 		return 0;
 	}
 
@@ -460,11 +461,14 @@ int openFiles(const char* KEY_F, FILE** KEY_FILE, const char* INPUT, FILE** INPU
   * @param INPUT_FILE input pointer to input file.
   * @param OUTPUT_FILE input pointer to output file
 */
-void run_Algorithm(const char MODE, FILE* INPUT_FILE, FILE* OUTPUT_FILE) {
+void run_Algorithm(const char* MODE, FILE* INPUT_FILE, FILE* OUTPUT_FILE) {
 	uint64_t plaintext_Block = 0;
 	uint64_t sbox_Input;
 	uint64_t pbox_input;
 	uint64_t pbox_output;
+
+	//Variables for 16 rounds loop
+	int initial_Counter =0 , limit = 15, direction = 1;
 
 	//While file is not empty, read a block (64-bit) of plaintext.
 	while (fread (&plaintext_Block, sizeof(plaintext_Block), 1, INPUT_FILE) > 0) {
@@ -477,33 +481,30 @@ void run_Algorithm(const char MODE, FILE* INPUT_FILE, FILE* OUTPUT_FILE) {
 		uint32_t right_Half_Intermediate_Text = (uint32_t)intermediate_Text;
 		uint32_t left_Half_Intermediate_Text = (uint32_t)(intermediate_Text >> 32);
 
-		if (MODE == 'e') {
-			for (int i=0; i<16; i++) {
-				//Perform mangler function (Expansion, XOR with key, SBOX, PBOX)
-				sbox_Input = f_function(right_Half_Intermediate_Text, round_keys[i]);
+		//Initialize the loop counters based on mode (Encrypt/Decrypt)
+		if(MODE[0] == 'e') {
+			initial_Counter = 0;
+			limit = 15;
+			direction = 1;
+		}else if (MODE[0] == 'd'){
+			initial_Counter = 15;
+			limit = 0;
+			direction = -1;
+		}
 
-				KeyedSubstitution(&sbox_Input, &pbox_input);
-				Transposition(&pbox_input, &pbox_output);
+		while((initial_Counter <= limit && (limit == 15)) || (initial_Counter >= limit && (limit == 0)))  {
+			//Perform mangler function (Expansion, XOR with key, SBOX, PBOX)
+			sbox_Input = f_function(right_Half_Intermediate_Text, round_keys[initial_Counter]);
 
-				//Perform RH(i-1)->LH(i) and LH(i-1)^(Output of mangler)->RH(i)
-				intermediate_Text = right_Half_Intermediate_Text;
-				right_Half_Intermediate_Text = (uint32_t) (pbox_output ^ left_Half_Intermediate_Text);
-				left_Half_Intermediate_Text = (uint32_t) (intermediate_Text);
-			}
-		}else if (MODE == 'd') {
-			//Repeat for 16 rounds
-			for (int i=15; i>=0; i--) {
-				//Perform mangler function (Expansion, XOR with key, SBOX, PBOX)
-				sbox_Input = f_function(right_Half_Intermediate_Text, round_keys[i]);
+			KeyedSubstitution(&sbox_Input, &pbox_input);
+			Transposition(&pbox_input, &pbox_output);
 
-				KeyedSubstitution(&sbox_Input, &pbox_input);
-				Transposition(&pbox_input, &pbox_output);
+			//Perform RH(i-1)->LH(i) and LH(i-1)^(Output of mangler)->RH(i)
+			intermediate_Text = right_Half_Intermediate_Text;
+			right_Half_Intermediate_Text = (uint32_t) (pbox_output ^ left_Half_Intermediate_Text);
+			left_Half_Intermediate_Text = (uint32_t) (intermediate_Text);
 
-				//Perform RH(i-1)->LH(i) and LH(i-1)^(Output of mangler)->RH(i)
-				intermediate_Text = right_Half_Intermediate_Text;
-				right_Half_Intermediate_Text = (uint32_t) (pbox_output ^ left_Half_Intermediate_Text);
-				left_Half_Intermediate_Text = (uint32_t) (intermediate_Text);
-			}
+			initial_Counter = initial_Counter + direction;
 		}
 
 		//Perform the swap and inverse initial permutation
@@ -514,6 +515,7 @@ void run_Algorithm(const char MODE, FILE* INPUT_FILE, FILE* OUTPUT_FILE) {
 		alignData(&intermediate_Text);
 		fwrite(&intermediate_Text, sizeof(intermediate_Text), 1, OUTPUT_FILE);
 	}
+
 }
 
 /**
@@ -523,7 +525,7 @@ void run_Algorithm(const char MODE, FILE* INPUT_FILE, FILE* OUTPUT_FILE) {
   * @param INPUT_F String specifying the name for input data file.
   * @param OUTPUT_F String specifying the name for output data file.
 */
-void DES(const char MODE, const char* KEY_F ,const char* INPUT_F, const char* OUTPUT_F) {
+void DES(const char* MODE, const char* KEY_F ,const char* INPUT_F, const char* OUTPUT_F) {
 
 	FILE* KEY_FILE;
 	FILE* INPUT_FILE;
@@ -560,14 +562,13 @@ int main (const int argc, char** argv) {
 	}
 
 	//Extract the Mode and file names from the terminal.
-	const char MODE = argv[1][0];
+	const char* MODE = argv[1];
 	const char* KEY_F = argv[2];
 	const char* INPUT = argv[3];
 	const char* OUTPUT = argv[4];
 
 	//Run the DES algorithm
 	DES(MODE, KEY_F, INPUT, OUTPUT);
-
 }
 
 
