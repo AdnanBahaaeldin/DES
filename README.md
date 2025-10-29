@@ -16,6 +16,3 @@ It supports both **encryption** and **decryption** in **ECB (Electronic Codebook
 - Works with binary files (`.bin`)
 - Clean and modular C code structure
 - Tested with standard DES test vectors
-
----
-
